@@ -4,7 +4,7 @@ import { verifyAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.get("/get-devices", fetchDevices);
+router.get("/get-devices",verifyAuth, fetchDevices);
 router.post("/link-kit", verifyAuth, linkKit);
 router.post("/pair-device", verifyAuth, connectDevice);
 router.post("/unpair-device", verifyAuth, disconnectDevice);
