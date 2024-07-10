@@ -6,6 +6,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   kitId: { type: Number },
   dob: { type: Number },
+  patientStatus: { type: String },
 });
 
 export default new mongoose.model("User", userSchema, "users");

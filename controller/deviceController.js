@@ -18,6 +18,12 @@ const fetchDevices = async (req, res) => {
 const linkKit = async (req, res) => {
   const { kitId } = req.body;
   const { email } = req.user;
+  if (!email) {
+    return res.status(200).send({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
   if (!kitId) {
     return res.status(400).send({
       success: false,
@@ -52,6 +58,7 @@ const linkKit = async (req, res) => {
       });
     }
     user.kitId = kitId;
+    user.patientStatus = "patientLinked";
     await user.save();
     return res.json({
       success: true,
@@ -111,7 +118,10 @@ const connectDevice = async (req, res) => {
   try {
     if (findDevices) {
       findDevices.connectedDevices = [...findDevices.connectedDevices, device];
+      let user = await USER.findOne({ email: email });
+      user.patientStatus = "devicePaired";
       await findDevices.save();
+      await user.save();
       return res.status(200).json({
         success: true,
         message: "Device paired successfully",
@@ -144,7 +154,7 @@ const disconnectDevice = async (req, res) => {
   try {
     const updatedUser = await DEVICE.updateOne(
       { userEmail: email },
-      { $pull: { connectedDevices: { "device-code": deviceId } } },
+      { $pull: { connectedDevices: { "deviceCode": deviceId } } },
       { upsert: false, new: true }
     );
     if (!updatedUser.modifiedCount) {

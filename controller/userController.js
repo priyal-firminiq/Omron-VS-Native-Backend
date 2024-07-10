@@ -19,6 +19,7 @@ const registerUser = async (req, res) => {
       name,
       email,
       password,
+      patientStatus: "signedUp",
     });
     await user.save();
     const savedUser = await USER.findOne({ email: email });
@@ -37,6 +38,7 @@ const registerUser = async (req, res) => {
       user: {
         name: savedUser.name,
         email: savedUser.email,
+        patientStatus: savedUser.patientStatus,
         accessToken: accessToken,
       },
     });
@@ -76,6 +78,7 @@ const loginUser = async (req, res) => {
             name: user.name,
             email: user.email,
             kitId: user.kitId,
+            patientStatus: user.patientStatus,
             accessToken: accessToken,
           },
         });
@@ -164,6 +167,7 @@ const addDOB = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
     user.dob = dob;
+    user.patientStatus = "dobVerified";
     await user.save();
     return res.json({ success: true, message: "DOB added successfully" });
   } catch (error) {
@@ -172,7 +176,7 @@ const addDOB = async (req, res) => {
 };
 
 const verifyEmail = async (req, res) => {
-  const { email } = req.body;
+  const { email, action } = req.body;
   if (!email) {
     return res.send({
       success: false,
@@ -185,6 +189,10 @@ const verifyEmail = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: "Email is not valid" });
+    }
+    if (action !== "forgotPassword") {
+      user.patientStatus = "emailVerified";
+      await user.save();
     }
     return res.json({ success: true, message: "Email verified successfully" });
   } catch (error) {
@@ -202,6 +210,7 @@ const getProfileInfo = async (req, res) => {
       email: user.email,
       dob: user.dob,
       kitId: user.kitId,
+      patientStatus: user.patientStatus,
       phoneNo: 1234567890,
     };
     return res.json({ success: true, profileData });
