@@ -6,7 +6,6 @@ const addKit = async (req, res) => {
     res.status(400).send({ success: false, message: "Kit Id required" });
   }
   let kit = await KIT.findOne({ kitId });
-  console.log(kit);
   if (kit) {
     return res
       .status(400)
