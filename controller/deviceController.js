@@ -116,12 +116,12 @@ const connectDevice = async (req, res) => {
     }
   }
   try {
+    let user = await USER.findOne({ email: email });
+    user.patientStatus = "devicePaired";
     if (findDevices) {
       findDevices.connectedDevices = [...findDevices.connectedDevices, device];
-      let user = await USER.findOne({ email: email });
-      user.patientStatus = "devicePaired";
-      await findDevices.save();
       await user.save();
+      await findDevices.save();
       return res.status(200).json({
         success: true,
         message: "Device paired successfully",
@@ -131,6 +131,7 @@ const connectDevice = async (req, res) => {
         userEmail: email,
         connectedDevices: devices,
       });
+      await user.save();
       await connectedDevices.save();
       return res.status(200).json({
         success: true,
@@ -154,7 +155,7 @@ const disconnectDevice = async (req, res) => {
   try {
     const updatedUser = await DEVICE.updateOne(
       { userEmail: email },
-      { $pull: { connectedDevices: { "deviceCode": deviceId } } },
+      { $pull: { connectedDevices: { deviceCode: deviceId } } },
       { upsert: false, new: true }
     );
     if (!updatedUser.modifiedCount) {
