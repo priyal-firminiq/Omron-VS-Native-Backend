@@ -119,7 +119,10 @@ const connectDevice = async (req, res) => {
     let user = await USER.findOne({ email: email });
     user.patientStatus = "devicePaired";
     if (findDevices) {
-      findDevices.connectedDevices = [...findDevices.connectedDevices, device];
+      findDevices.connectedDevices = [
+        ...findDevices.connectedDevices,
+        { ...devices, isPared: "true" },
+      ];
       await user.save();
       await findDevices.save();
       return res.status(200).json({
@@ -129,7 +132,7 @@ const connectDevice = async (req, res) => {
     } else {
       const connectedDevices = new DEVICE({
         userEmail: email,
-        connectedDevices: devices,
+        connectedDevices: { ...devices, isPared: "true" },
       });
       await user.save();
       await connectedDevices.save();
