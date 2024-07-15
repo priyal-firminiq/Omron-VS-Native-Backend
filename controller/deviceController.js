@@ -132,7 +132,7 @@ const connectDevice = async (req, res) => {
     } else {
       const connectedDevices = new DEVICE({
         userEmail: email,
-        connectedDevices: { ...devices, isPared: "true" },
+        connectedDevices: { ...devices, isPaired: "true" },
       });
       await user.save();
       await connectedDevices.save();
@@ -146,8 +146,8 @@ const connectDevice = async (req, res) => {
   }
 };
 
-const disconnectDevice = async (req, res) => {
-  const { deviceId } = req.body;
+const pairUnpairDevice = async (req, res) => {
+  const { deviceId, isPaired } = req.body;
   const { email } = req.user;
   if (!deviceId) {
     return res.status(400).send({
@@ -155,10 +155,16 @@ const disconnectDevice = async (req, res) => {
       message: "Device ID is required",
     });
   }
+  if (!action) {
+    return res.status(400).send({
+      success: false,
+      message: "Device Action is required",
+    });
+  }
   try {
     const updatedUser = await DEVICE.updateOne(
       { userEmail: email },
-      { $pull: { connectedDevices: { deviceCode: deviceId } } },
+      { $set: { connectedDevices: { isPaired: isPaired } } },
       { upsert: false, new: true }
     );
     if (!updatedUser.modifiedCount) {
@@ -169,7 +175,9 @@ const disconnectDevice = async (req, res) => {
     }
     return res.status(200).json({
       success: true,
-      message: "Device unpaired successfully",
+      message: isPaired
+        ? "Device paired successfully"
+        : "Device unpaired successfully",
     });
   } catch (error) {
     return res.status(400).send(error.message);
@@ -191,6 +199,6 @@ export {
   fetchDevices,
   linkKit,
   connectDevice,
-  disconnectDevice,
+  pairUnpairDevice,
   getConnectDevices,
 };
