@@ -183,10 +183,37 @@ const pairUnpairDevice = async (req, res) => {
       message: "Device ID and Status both are required",
     });
   }
+  if (pairStatus !== "pair" && pairStatus !== "unpair") {
+    return res.status(400).send({
+      success: false,
+      message: "Please send correct pair status",
+    });
+  }
   try {
+    const deviceData = await DEVICE.findOne({ userEmail: email });
+    if (!deviceData) {
+      return res.status(400).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+    const deviceIndex = deviceData.connectedDevices.findIndex(
+      (device) => device.deviceCode === deviceId
+    );
+    if (deviceIndex === -1) {
+      return res.status(400).send({
+        success: false,
+        message: "Device not found",
+      });
+    }
+    deviceData.connectedDevices[deviceIndex].pairStatus = pairStatus;
+    await deviceData.save();
     return res.status(200).json({
       success: true,
-      message: "Device unpaired successfully",
+      message:
+        pairStatus === "pair"
+          ? "Device paired successfully"
+          : "Device unpaired successfully",
     });
   } catch (error) {
     return res.status(400).send(error.message);
@@ -211,4 +238,28 @@ export {
   removeConnectdDevice,
   pairUnpairDevice,
   getConnectDevices,
+};
+
+const data = {
+  userEmail: "user02@gmail.com",
+  connectedDevices: [
+    {
+      _id: "667ba948dc4c849b87e1fbc1",
+      deviceCode: "BP7250",
+      deviceName: "Wireless Upper Arm Blood Pressure Monitor BP7250",
+      imageUrl:
+        "https://res.cloudinary.com/ds6oggjvt/image/upload/v1719830635/bp_zhn9sc.jpg",
+      type: "bp",
+      pairStatus: "pair",
+    },
+    {
+      _id: "667baac5dc4c849b87e1fbc4",
+      deviceCode: "SC-150",
+      deviceName: "Weight Scale SC-150",
+      imageUrl:
+        "https://res.cloudinary.com/ds6oggjvt/image/upload/v1719830733/weightScale_o1ilsp.jpg",
+      type: "weight",
+      pairStatus: "pair",
+    },
+  ],
 };
