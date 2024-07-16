@@ -90,6 +90,7 @@ const connectDevice = async (req, res) => {
     .find({ deviceCode: deviceId })
     .toArray();
   const device = devices[0];
+  device.pairStatus = "paired";
   if (!device) {
     return res.status(404).send({
       success: false,
@@ -119,10 +120,7 @@ const connectDevice = async (req, res) => {
     let user = await USER.findOne({ email: email });
     user.patientStatus = "devicePaired";
     if (findDevices) {
-      findDevices.connectedDevices = [
-        ...findDevices.connectedDevices,
-        { ...devices, isPared: "true" },
-      ];
+      findDevices.connectedDevices = [...findDevices.connectedDevices, device];
       await user.save();
       await findDevices.save();
       return res.status(200).json({
@@ -132,7 +130,7 @@ const connectDevice = async (req, res) => {
     } else {
       const connectedDevices = new DEVICE({
         userEmail: email,
-        connectedDevices: { ...devices, isPaired: "true" },
+        connectedDevices: devices,
       });
       await user.save();
       await connectedDevices.save();
@@ -147,7 +145,7 @@ const connectDevice = async (req, res) => {
 };
 
 const pairUnpairDevice = async (req, res) => {
-  const { deviceId, isPaired } = req.body;
+  const { deviceId } = req.body;
   const { email } = req.user;
   if (!deviceId) {
     return res.status(400).send({
@@ -155,16 +153,10 @@ const pairUnpairDevice = async (req, res) => {
       message: "Device ID is required",
     });
   }
-  if (!action) {
-    return res.status(400).send({
-      success: false,
-      message: "Device Action is required",
-    });
-  }
   try {
     const updatedUser = await DEVICE.updateOne(
       { userEmail: email },
-      { $set: { connectedDevices: { isPaired: isPaired } } },
+      { $pull: { connectedDevices: { deviceCode: deviceId } } },
       { upsert: false, new: true }
     );
     if (!updatedUser.modifiedCount) {
@@ -175,9 +167,7 @@ const pairUnpairDevice = async (req, res) => {
     }
     return res.status(200).json({
       success: true,
-      message: isPaired
-        ? "Device paired successfully"
-        : "Device unpaired successfully",
+      message: "Device unpaired successfully",
     });
   } catch (error) {
     return res.status(400).send(error.message);
