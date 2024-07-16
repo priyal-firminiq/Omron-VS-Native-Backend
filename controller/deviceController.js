@@ -90,29 +90,29 @@ const connectDevice = async (req, res) => {
     .find({ deviceCode: deviceId })
     .toArray();
   const device = devices[0];
-  device.pairStatus = "paired";
   if (!device) {
     return res.status(404).send({
       success: false,
       message: "Device not found",
     });
   }
+  device.pairStatus = "pair";
   const findDevices = await DEVICE.findOne({ userEmail: email });
   const linkedDevices = findDevices?.connectedDevices;
   if (linkedDevices) {
-    // const isAlreadyLinkedDevice = linkedDevices?.find(
-    //   (device) => device && device["deviceCode"] === deviceId
-    // );
+    const isAlreadyLinkedDevice = linkedDevices?.find(
+      (device) => device && device["deviceCode"] === deviceId
+    );
     const isAlreadyLinkedDeviceType = linkedDevices?.find(
       (device) => device && device["type"] === deviceType
     );
-    if (isAlreadyLinkedDeviceType) {
+    if (isAlreadyLinkedDeviceType || isAlreadyLinkedDevice) {
       return res.status(400).send({
         success: false,
         message:
           deviceType === "bp"
-            ? "BP device is already paired"
-            : "Weight device is already paired",
+            ? "BP device or device with same code is already paired"
+            : "Weight device or device with same code is already paired",
       });
     }
   }
@@ -144,7 +144,7 @@ const connectDevice = async (req, res) => {
   }
 };
 
-const pairUnpairDevice = async (req, res) => {
+const removeConnectdDevice = async (req, res) => {
   const { deviceId } = req.body;
   const { email } = req.user;
   if (!deviceId) {
@@ -174,6 +174,25 @@ const pairUnpairDevice = async (req, res) => {
   }
 };
 
+const pairUnpairDevice = async (req, res) => {
+  const { deviceId, pairStatus } = req.body;
+  const { email } = req.user;
+  if (!deviceId || !pairStatus) {
+    return res.status(400).send({
+      success: false,
+      message: "Device ID and Status both are required",
+    });
+  }
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "Device unpaired successfully",
+    });
+  } catch (error) {
+    return res.status(400).send(error.message);
+  }
+};
+
 const getConnectDevices = async (req, res) => {
   const { email } = req.user;
   try {
@@ -189,6 +208,7 @@ export {
   fetchDevices,
   linkKit,
   connectDevice,
+  removeConnectdDevice,
   pairUnpairDevice,
   getConnectDevices,
 };
